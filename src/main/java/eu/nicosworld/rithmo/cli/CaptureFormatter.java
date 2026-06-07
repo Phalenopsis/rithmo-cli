@@ -22,27 +22,9 @@ public class CaptureFormatter {
 
     private static String mapPower(PowerJustificationDTO p) {
         if(p.relation().equals(PowerRelationDTO.POWER)) {
-            return "car " + p.actorValue() + mapDegree(p.degree()) + " = " + p.targetValue();
+            return "car power(" + p.actorValue() + ", " +p.degree() + ") = " + p.targetValue();
         }
-        String degree = "";
-        if(p.degree() > 2) {
-            degree = mapDegree(p.degree());
-        }
-        return degree + "√" +  p.actorValue() + " = " + p.targetValue();
-    }
-
-    private static String mapDegree(int degree) {
-        return switch (degree) {
-            case 2 -> "²";
-            case 3 -> "³";
-            case 4 -> "⁴";
-            case 5 -> "⁵";
-            case 6 -> "⁶";
-            case 7 -> "⁷";
-            case 8 -> "⁸";
-            case 9 -> "⁹";
-            default -> throw new RuntimeException("Non supported");
-        };
+        return "root(" + p.actorValue() + ", " + p.degree() + ") = " + p.targetValue();
     }
 
     private static String mapAssault(AssaultJustificationDTO a) {

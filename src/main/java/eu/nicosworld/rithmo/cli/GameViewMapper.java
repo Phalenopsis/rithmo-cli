@@ -298,7 +298,7 @@ public class GameViewMapper {
                         : "";
 
         return String.format(
-                "%s: %s ⚔️ %s%s \n%s",
+                "%s: %s vs %s%s \n%s",
                 phase,
                 actorLabel,
                 targetLabel,
