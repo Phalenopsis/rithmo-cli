@@ -22,9 +22,37 @@ public class CaptureFormatter {
 
     private static String mapPower(PowerJustificationDTO p) {
         if(p.relation().equals(PowerRelationDTO.POWER)) {
-            return "car power(" + p.actorValue() + ", " +p.degree() + ") = " + p.targetValue();
+            return "car " + p.actorValue() + powerLabel(p.degree()) + " est égal à " + p.targetValue();
         }
-        return "root(" + p.actorValue() + ", " + p.degree() + ") = " + p.targetValue();
+        return "car la " + rootLabel(p.degree()) + " de " + p.actorValue() +  " est égal à " + p.targetValue();
+    }
+
+    private static String powerLabel(int degree) {
+        return switch (degree) {
+            case 2 -> "au carré";
+            case 3 -> "au cube";
+            case 4 -> "à la puissance quatre";
+            case 5 -> "à la puissance cinq";
+            case 6 -> "à la puissance six";
+            case 7 -> "à la puissance sept";
+            case 8 -> "à la puissance huit";
+            case 9 -> "à la puissance neuf";
+            default -> "à la puissance " + degree;
+        };
+    }
+
+    private static String rootLabel(int degree) {
+        return switch (degree) {
+            case 2 -> "racine carrée";
+            case 3 -> "racine cubique";
+            case 4 -> "racine quatrième";
+            case 5 -> "racine cinquième";
+            case 6 -> "racine sixième";
+            case 7 -> "racine septième";
+            case 8 -> "racine huitième";
+            case 9 -> "racine neuvième";
+            default -> "racine " + degree + "ième";
+        };
     }
 
     private static String mapAssault(AssaultJustificationDTO a) {
