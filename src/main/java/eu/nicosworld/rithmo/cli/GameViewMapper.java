@@ -8,391 +8,283 @@ import eu.nicosworld.rithmo.core.game.dto.board.PlayerAssetsDTO;
 import eu.nicosworld.rithmo.core.game.dto.decision.DecisionDTO;
 import eu.nicosworld.rithmo.core.game.dto.option.*;
 import eu.nicosworld.rithmo.core.game.dto.status.PlayerColorDTO;
-import eu.nicosworld.rithmo.core.helper.JustificationStringMapper;
 import eu.nicosworld.rithmo.engine.model.Position;
-
 import java.util.*;
 
 public class GameViewMapper {
 
-    public GameViewModel toView(GameStatusDTO status) {
-        Formatter formatter = new Formatter(status);
-        DecisionIndex decisionIndex = new DecisionIndex(status);
+  public GameViewModel toView(GameStatusDTO status) {
+    Formatter formatter = new Formatter(status);
+    DecisionIndex decisionIndex = new DecisionIndex(status);
 
-        return new GameViewModel(
-                mapBoard(status, formatter),
-                status.currentPlayer(),
-                status.phase(),
-                mapPyramids(status, formatter),
-                mapAssets(status, formatter),
-                mapOptions(status, formatter)
-        );
-    }
+    return new GameViewModel(
+        mapBoard(status, formatter),
+        status.currentPlayer(),
+        status.phase(),
+        mapPyramids(status, formatter),
+        mapAssets(status, formatter),
+        mapOptions(status, formatter));
+  }
 
-    private BoardView mapBoard(GameStatusDTO status, Formatter formatter) {
+  private BoardView mapBoard(GameStatusDTO status, Formatter formatter) {
 
-        return new BoardView(
-                status.board().width(),
-                status.board().height(),
-                status.board().pieces().stream()
-                        .map(p -> new PieceView(
-                                formatter.formatActor(p),
-                                p.position()
-                        ))
-                        .toList()
-        );
-    }
+    return new BoardView(
+        status.board().width(),
+        status.board().height(),
+        status.board().pieces().stream()
+            .map(p -> new PieceView(formatter.formatActor(p), p.position()))
+            .toList());
+  }
 
-
-
-    private Map<String, PieceDTO> mapActor(GameStatusDTO status) {
-        Map<String, PieceDTO> map = new HashMap<>();
-        for(PieceDTO pieceDTO: status.board().pieces()) {
-            map.put(pieceDTO.id(), pieceDTO);
-            if(pieceDTO.shape().equals(PieceShape.PYRAMID)) {
-                for (PieceDTO componentDTO: pieceDTO.components()) {
-                    map.put(componentDTO.id(), componentDTO);
-                }
-            }
+  private Map<String, PieceDTO> mapActor(GameStatusDTO status) {
+    Map<String, PieceDTO> map = new HashMap<>();
+    for (PieceDTO pieceDTO : status.board().pieces()) {
+      map.put(pieceDTO.id(), pieceDTO);
+      if (pieceDTO.shape().equals(PieceShape.PYRAMID)) {
+        for (PieceDTO componentDTO : pieceDTO.components()) {
+          map.put(componentDTO.id(), componentDTO);
         }
-        for(PieceDTO pieceDTO: status.assets().get(status.currentPlayer()).reserve()) {
-            map.put(pieceDTO.id(), pieceDTO);
-        }
-        return map;
+      }
     }
+    for (PieceDTO pieceDTO : status.assets().get(status.currentPlayer()).reserve()) {
+      map.put(pieceDTO.id(), pieceDTO);
+    }
+    return map;
+  }
 
-    private List<UIOption> mapOptions(GameStatusDTO status, Formatter formatter) {
+  private List<UIOption> mapOptions(GameStatusDTO status, Formatter formatter) {
 
-        Map<String, PieceDTO> actors = mapActor(status);
+    Map<String, PieceDTO> actors = mapActor(status);
 
-        List<UIOption> uiOptions = new ArrayList<>();
+    List<UIOption> uiOptions = new ArrayList<>();
 
-//        System.out.println("** PRINT POSSIBLES OPTIONS **");
-//        for (Map.Entry<PieceDTO, Set<PlayerOptionDTO>> entry : status.possibleOptions().entrySet()) {
-//            PieceDTO piece = entry.getKey();
-//
-//            for (PlayerOptionDTO option : entry.getValue()) {
-//                System.out.println(piece + " : " + option);
-//            }
-//        }
-//
-//        System.out.println("**** END PRINT POSSIBLES OPTIONS ****");
+    //        System.out.println("** PRINT POSSIBLES OPTIONS **");
+    //        for (Map.Entry<PieceDTO, Set<PlayerOptionDTO>> entry :
+    // status.possibleOptions().entrySet()) {
+    //            PieceDTO piece = entry.getKey();
+    //
+    //            for (PlayerOptionDTO option : entry.getValue()) {
+    //                System.out.println(piece + " : " + option);
+    //            }
+    //        }
+    //
+    //        System.out.println("**** END PRINT POSSIBLES OPTIONS ****");
 
-        for (DecisionDTO decision : status.possibleDecisions()) {
- //           System.out.println(decision);
+    for (DecisionDTO decision : status.possibleDecisions()) {
+      //           System.out.println(decision);
 
-            // ============================================
-            // SKIP
-            // ============================================
+      // ============================================
+      // SKIP
+      // ============================================
 
-            if (decision.skip()) {
+      if (decision.skip()) {
 
-                uiOptions.add(
-                        new UIOption(
-                                decision.id(),
-                                "PASS / END TURN",
-                                OptionType.SKIP
-                        )
-                );
+        uiOptions.add(new UIOption(decision.id(), "PASS / END TURN", OptionType.SKIP));
 
-                continue;
-            }
+        continue;
+      }
 
-            PieceDTO actor = actors.get(decision.actorId());
+      PieceDTO actor = actors.get(decision.actorId());
 
-            // ============================================
-            // MOVE / REINTRODUCTION
-            // ============================================
+      // ============================================
+      // MOVE / REINTRODUCTION
+      // ============================================
 
-            if (decision.capturedIdList() == null
-                    || decision.capturedIdList().isEmpty()) {
+      if (decision.capturedIdList() == null || decision.capturedIdList().isEmpty()) {
 
-                // ========================================
-                // MOVE
-                // ========================================
+        // ========================================
+        // MOVE
+        // ========================================
 
-                if (actor.position() != null) {
+        if (actor.position() != null) {
 
-                    uiOptions.add(
-                            new UIOption(
-                                    decision.id(),
-                                    buildMoveDecisionLabel(
-                                            status,
-                                            formatter,
-                                            actor,
-                                            decision
-                                    ),
-                                    OptionType.MOVE
-                            )
-                    );
-                }
-
-                // ========================================
-                // REINTRODUCTION
-                // ========================================
-
-                else {
-
-                    uiOptions.add(
-                            new UIOption(
-                                    decision.id(),
-                                    buildReintroductionDecisionLabel(
-                                            formatter,
-                                            actor,
-                                            decision
-                                    ),
-                                    OptionType.REINTRODUCTION
-                            )
-                    );
-                }
-
-                continue;
-            }
-
-            // ============================================
-            // CAPTURE
-            // ============================================
-
-            List<PlayerOptionDTO> matchingOptions =
-                    findMatchingCaptureOptions(
-                            status,
-                            decision
-                    );
-
-            boolean isPreCapture =
-                    matchingOptions.stream()
-                            .anyMatch(PreCaptureOptionDTO.class::isInstance);
-
-            uiOptions.add(
-                    new UIOption(
-                            decision.id(),
-                            buildCaptureDecisionLabel(
-                                    formatter,
-                                    actor,
-                                    decision,
-                                    matchingOptions,
-                                    isPreCapture
-                            ),
-                            isPreCapture
-                                    ? OptionType.PRE_CAPTURE
-                                    : OptionType.POST_CAPTURE
-                    )
-            );
+          uiOptions.add(
+              new UIOption(
+                  decision.id(),
+                  buildMoveDecisionLabel(status, formatter, actor, decision),
+                  OptionType.MOVE));
         }
 
-        return uiOptions;
-    }
+        // ========================================
+        // REINTRODUCTION
+        // ========================================
 
-    private String buildMoveDecisionLabel(
-            GameStatusDTO status,
-            Formatter formatter,
-            PieceDTO actor,
-            DecisionDTO decision
-    ) {
+        else {
 
-        MoveOptionDTO moveOption =
-                findMoveOption(status, actor, decision.landing());
-
-        return String.format(
-                "%s : MOVE %s -> %s (%s)",
-                formatter.formatActor(actor),
-                toChessCoordinates(actor.position()),
-                toChessCoordinates(decision.landing()),
-                moveOption.typeDTO()
-        );
-    }
-
-    private List<PlayerOptionDTO> findMatchingCaptureOptions(
-            GameStatusDTO status,
-            DecisionDTO decision
-    ) {
-
-        Set<String> capturedIds =
-                new HashSet<>(decision.capturedIdList());
-
-        return status.possibleOptions()
-                .values()
-                .stream()
-                .flatMap(Set::stream)
-
-                .filter(option ->
-                    option instanceof CaptureOptionDTO
-                )
-
-                .filter(option -> {
-
-                    PieceDTO target;
-
-                    if (option instanceof PreCaptureOptionDTO pre) {
-                        target = pre.target();
-                        return capturedIds.contains(target.id());
-                    }
-
-                    if (option instanceof CaptureOptionDTO post) {
-                        target = post.target();
-                        return capturedIds.contains(target.id());
-                    }
-
-                    return false;
-                })
-
-                .toList();
-    }
-
-    private String buildReintroductionDecisionLabel(
-            Formatter formatter,
-            PieceDTO actor,
-            DecisionDTO decision
-    ) {
-
-        return String.format(
-                "REINTRODUCE %s -> %s",
-                formatter.formatActor(actor),
-                toChessCoordinates(decision.landing())
-        );
-    }
-
-    private String buildCaptureDecisionLabel(
-            Formatter formatter,
-            PieceDTO actor,
-            DecisionDTO decision,
-            List<PlayerOptionDTO> options,
-            boolean preCapture
-    ) {
-
-        String phase =
-                preCapture
-                        ? "PRE-CAPTURE"
-                        : "POST-CAPTURE";
-
-        String actorLabel =
-                formatter.formatActor(actor);
-
-        Set<String> targets =
-                new HashSet<>();
-
-        Set<String> types =
-                new LinkedHashSet<>();
-
-        for (PlayerOptionDTO option : options) {
-
-            if (option instanceof CaptureOptionDTO capture) {
-
-                targets.add(
-                        formatter.formatActor(capture.target())
-                );
-
-                types.add(CaptureFormatter.formatCapture(capture));
-            }
+          uiOptions.add(
+              new UIOption(
+                  decision.id(),
+                  buildReintroductionDecisionLabel(formatter, actor, decision),
+                  OptionType.REINTRODUCTION));
         }
 
-        String targetLabel =
-                String.join(" + ", targets);
+        continue;
+      }
 
-        String typeLabel =
-                String.join("\n", types);
+      // ============================================
+      // CAPTURE
+      // ============================================
 
-        String landing =
-                decision.landing() != null
-                        ? " -> " + toChessCoordinates(decision.landing())
-                        : "";
+      List<PlayerOptionDTO> matchingOptions = findMatchingCaptureOptions(status, decision);
 
-        return String.format(
-                "%s: %s vs %s%s \n%s",
-                phase,
-                actorLabel,
-                targetLabel,
-                landing,
-                typeLabel
-        );
+      boolean isPreCapture =
+          matchingOptions.stream().anyMatch(PreCaptureOptionDTO.class::isInstance);
+
+      uiOptions.add(
+          new UIOption(
+              decision.id(),
+              buildCaptureDecisionLabel(formatter, actor, decision, matchingOptions, isPreCapture),
+              isPreCapture ? OptionType.PRE_CAPTURE : OptionType.POST_CAPTURE));
     }
 
-    private MoveOptionDTO findMoveOption(
-            GameStatusDTO status,
-            PieceDTO actor,
-            Position landing
-    ) {
+    return uiOptions;
+  }
 
-        return status.possibleOptions()
-                .getOrDefault(actor, Set.of())
-                .stream()
-                .filter(MoveOptionDTO.class::isInstance)
-                .map(MoveOptionDTO.class::cast)
-                .filter(move ->
-                        Objects.equals(move.to(), landing)
-                )
-                .findFirst()
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "No matching move option found for landing "
-                                        + landing
-                        )
-                );
+  private String buildMoveDecisionLabel(
+      GameStatusDTO status, Formatter formatter, PieceDTO actor, DecisionDTO decision) {
+
+    MoveOptionDTO moveOption = findMoveOption(status, actor, decision.landing());
+
+    return String.format(
+        "%s : MOVE %s -> %s (%s)",
+        formatter.formatActor(actor),
+        toChessCoordinates(actor.position()),
+        toChessCoordinates(decision.landing()),
+        moveOption.typeDTO());
+  }
+
+  private List<PlayerOptionDTO> findMatchingCaptureOptions(
+      GameStatusDTO status, DecisionDTO decision) {
+
+    Set<String> capturedIds = new HashSet<>(decision.capturedIdList());
+
+    return status.possibleOptions().values().stream()
+        .flatMap(Set::stream)
+        .filter(option -> option instanceof CaptureOptionDTO)
+        .filter(
+            option -> {
+              PieceDTO target;
+
+              if (option instanceof PreCaptureOptionDTO pre) {
+                target = pre.target();
+                return capturedIds.contains(target.id());
+              }
+
+              if (option instanceof CaptureOptionDTO post) {
+                target = post.target();
+                return capturedIds.contains(target.id());
+              }
+
+              return false;
+            })
+        .toList();
+  }
+
+  private String buildReintroductionDecisionLabel(
+      Formatter formatter, PieceDTO actor, DecisionDTO decision) {
+
+    return String.format(
+        "REINTRODUCE %s -> %s",
+        formatter.formatActor(actor), toChessCoordinates(decision.landing()));
+  }
+
+  private String buildCaptureDecisionLabel(
+      Formatter formatter,
+      PieceDTO actor,
+      DecisionDTO decision,
+      List<PlayerOptionDTO> options,
+      boolean preCapture) {
+
+    String phase = preCapture ? "PRE-CAPTURE" : "POST-CAPTURE";
+
+    String actorLabel = formatter.formatActor(actor);
+
+    Set<String> targets = new HashSet<>();
+
+    Set<String> types = new LinkedHashSet<>();
+
+    for (PlayerOptionDTO option : options) {
+
+      if (option instanceof CaptureOptionDTO capture) {
+
+        targets.add(formatter.formatActor(capture.target()));
+
+        types.add(CaptureFormatter.formatCapture(capture));
+      }
     }
 
-    private PyramidDetailsView mapPyramids(
-            GameStatusDTO status,
-            Formatter formatter
-    ) {
+    String targetLabel = String.join(" + ", targets);
 
-        String white = "";
-        String black = "";
+    String typeLabel = String.join("\n", types);
 
-        for (PieceDTO piece : status.board().pieces()) {
+    String landing =
+        decision.landing() != null ? " -> " + toChessCoordinates(decision.landing()) : "";
 
-            if (piece.shape() != PieceShape.PYRAMID) {
-                continue;
-            }
+    return String.format("%s: %s vs %s%s \n%s", phase, actorLabel, targetLabel, landing, typeLabel);
+  }
 
-            String formatted =
-                    formatter.formatPyramid(piece);
+  private MoveOptionDTO findMoveOption(GameStatusDTO status, PieceDTO actor, Position landing) {
 
-            if (piece.owner() == PlayerColorDTO.WHITE) {
-                white = formatted;
-            }
-            else {
-                black = formatted;
-            }
-        }
+    return status.possibleOptions().getOrDefault(actor, Set.of()).stream()
+        .filter(MoveOptionDTO.class::isInstance)
+        .map(MoveOptionDTO.class::cast)
+        .filter(move -> Objects.equals(move.to(), landing))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalStateException("No matching move option found for landing " + landing));
+  }
 
-        return new PyramidDetailsView(
-                white,
-                black
-        );
+  private PyramidDetailsView mapPyramids(GameStatusDTO status, Formatter formatter) {
+
+    String white = "";
+    String black = "";
+
+    for (PieceDTO piece : status.board().pieces()) {
+
+      if (piece.shape() != PieceShape.PYRAMID) {
+        continue;
+      }
+
+      String formatted = formatter.formatPyramid(piece);
+
+      if (piece.owner() == PlayerColorDTO.WHITE) {
+        white = formatted;
+      } else {
+        black = formatted;
+      }
     }
 
-    private AssetsView mapAssets(GameStatusDTO status, Formatter formatter) {
+    return new PyramidDetailsView(white, black);
+  }
 
-        PlayerAssetsDTO white = status.assets().get(PlayerColorDTO.WHITE);
-        PlayerAssetsDTO black = status.assets().get(PlayerColorDTO.BLACK);
+  private AssetsView mapAssets(GameStatusDTO status, Formatter formatter) {
 
-        return new AssetsView(
-                new PlayerAssetsView(
-                        formatList(white.captured(), formatter),
-                        formatList(white.reserve(), formatter)
-                ),
-                new PlayerAssetsView(
-                        formatList(black.captured(), formatter),
-                        formatList(black.reserve(), formatter)
-                )
-        );
+    PlayerAssetsDTO white = status.assets().get(PlayerColorDTO.WHITE);
+    PlayerAssetsDTO black = status.assets().get(PlayerColorDTO.BLACK);
+
+    return new AssetsView(
+        new PlayerAssetsView(
+            formatList(white.captured(), formatter), formatList(white.reserve(), formatter)),
+        new PlayerAssetsView(
+            formatList(black.captured(), formatter), formatList(black.reserve(), formatter)));
+  }
+
+  private String formatList(List<PieceDTO> pieces, Formatter formatter) {
+
+    if (pieces == null || pieces.isEmpty()) {
+      return "";
     }
 
-    private String formatList(List<PieceDTO> pieces, Formatter formatter) {
+    return pieces.stream()
+        .map(formatter::toShortRepresentation)
+        .reduce((a, b) -> a + " " + b)
+        .orElse("");
+  }
 
-        if (pieces == null || pieces.isEmpty()) {
-            return "";
-        }
-
-        return pieces.stream()
-                .map(formatter::toShortRepresentation)
-                .reduce((a, b) -> a + " " + b)
-                .orElse("");
-    }
-
-    public static String toChessCoordinates(Position position) {
-        char letter = (char) ('A' + position.getX());
-        int number = position.getY() + 1;
-        return "" + letter + number;
-    }
+  public static String toChessCoordinates(Position position) {
+    char letter = (char) ('A' + position.getX());
+    int number = position.getY() + 1;
+    return "" + letter + number;
+  }
 }
