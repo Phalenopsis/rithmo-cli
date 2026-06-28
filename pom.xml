@@ -13,6 +13,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <rithmo-core.version>0.3.1-SNAPSHOT</rithmo-core.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spotless.plugin.version>2.43.0</spotless.plugin.version>
     </properties>
 
     <!-- ===================== -->
@@ -22,7 +23,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/Phalenopsis</url>
+            <url>https://maven.pkg.github.com/Phalenopsis/rithmo-core</url>
         </repository>
     </repositories>
 
@@ -41,6 +42,7 @@
             <artifactId>rithmo-core</artifactId>
             <version>${rithmo-core.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -52,25 +54,61 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
-
                 <executions>
                     <execution>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
-
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>*:*-tests</exclude>
+                                    <exclude>*:*test-jar*</exclude>
+                                    <exclude>org.junit.jupiter:*</exclude>
+                                    <exclude>org.assertj:*</exclude>
+                                    <exclude>org.mockito:*</exclude>
+                                </excludes>
+                            </artifactSet>
+
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
 
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>eu.nicosworld.rithmo.cli.Main</mainClass>
                                 </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.plugin.version}</version>
+                <configuration>
+                    <java>
+                        <toggleOffOn />
+                        <removeUnusedImports />
+                        <importOrder />
+                        <googleJavaFormat />
+                    </java>
+                </configuration>
             </plugin>
 
         </plugins>
